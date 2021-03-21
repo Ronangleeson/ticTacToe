@@ -1,0 +1,251 @@
+import java.util.*;
+
+public class Game {
+    static String EMPTY = " ";
+    static int SIZE = 3;
+
+    public static class Player {
+        int playerNum;
+        String playerPiece;
+
+        // Player constructor
+        public Player(int playerNum) {
+            this.playerNum = playerNum;
+            if (playerNum % 2 != 0) {
+                this.playerPiece = "X";
+            }
+            else {
+                this.playerPiece = "O";
+            }
+        }
+
+        public boolean makeMove(Board gameBoard, int row, int col) {
+            if (gameBoard.setSpace(row, col, playerPiece)) {
+                return true;
+            }
+            return false;
+        }
+
+        public boolean checkSpace(Board gameBoard, int row, int col) {
+            if (gameBoard.getSpace(row, col)== EMPTY) {
+                return true;
+            }
+            return false;
+        }
+
+        public boolean checkWin(Board gameBoard) {
+            if(gameBoard.checkRow(playerPiece) || gameBoard.checkCol(playerPiece) || gameBoard.checkDiagonal(playerPiece)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+
+    public static class Board {
+        String[][] board;
+        int size;
+        Map<Integer, List<Integer>> availableSpaces;
+
+        // constructor
+        public Board() {
+            this.board = new String[SIZE][SIZE];
+            this.size = SIZE;
+            this.availableSpaces = new HashMap<>();
+            // set up board
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    this.board[i][j] = EMPTY;
+                }
+            }
+            // set up available spaces
+            for (int i = 0; i < SIZE; i++) {
+                List<Integer> temp = new ArrayList<>();
+                for (int j = 0; j < SIZE; j++) {
+                    temp.add(j);
+                }
+                this.availableSpaces.put(i, temp);
+            }
+        }
+
+        public String getSpace(int row, int col) {
+            return this.board[row][col];
+        }
+
+        public boolean setSpace(int row, int col, String piece) {
+            // handle index out of bounds
+            if (row >= SIZE || col >= SIZE) {
+                return false;
+            }
+            // set space on board and remove space from HashMap of available spaces
+            if (this.board[row][col] == EMPTY) {
+                this.board[row][col] = piece;
+
+                // remove the col space from the row
+                // need to remove by OBJECT (i.e. the object 2 might not be at index 2 bc we are modifying the hashmap as we go and it gets smaller)
+                // easiest way to do this is get the index of the object we are removing
+                int colIndex = availableSpaces.get(row).indexOf(col);
+                this.availableSpaces.get(row).remove(colIndex);
+                // if the row is now empty, remove the row entirely
+                if (this.availableSpaces.get(row).isEmpty()) {
+                    this.availableSpaces.remove(row);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public void printBoard() {
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    System.out.print(this.board[i][j]);
+                    if (j != (SIZE - 1)) {
+                        System.out.print("|");
+                    }
+                }
+                System.out.println();
+                for (int k = 0; k < SIZE; k++) {
+                    if (k == (SIZE - 1)) {
+                        if (i != SIZE - 1) {
+                            System.out.print("-");
+                        }
+                    }
+                    else {
+                        if (i != SIZE - 1) {
+                            System.out.print("-+");
+                        }
+                    }
+                }
+                if (i != SIZE - 1) {
+                    System.out.println();
+                }
+            }
+        }
+
+        public int getSize() {
+            return this.size;
+        }
+
+        public boolean checkRow(String playerPiece) {
+            for (int row = 0; row < SIZE; row++) {
+                int colCounter = 0;
+                for (int col = 0; col < SIZE; col++) {
+                    if (board[row][col] == playerPiece) {
+                        colCounter++;
+                    }
+                }
+                if (colCounter == SIZE) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean checkCol(String playerPiece) {
+            for (int col = 0; col < SIZE; col++) {
+                int rowCounter = 0;
+                for (int row = 0; row < SIZE; row++) {
+                    if (board[row][col] == playerPiece) {
+                        rowCounter++;
+                    }
+                }
+                if (rowCounter == SIZE) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean checkDiagonal(String playerPiece) {
+            int downCounter = 0;
+            for (int row = 0, col = 0; row < SIZE & col < SIZE; row++, col++) {
+                if (board[row][col] == playerPiece) {
+                    downCounter++;
+                }
+            }
+            if (downCounter == SIZE) {
+                return true;
+            }
+            int upCounter = 0;
+            for (int row = (SIZE - 1), col = 0; row > -1 & col < SIZE; row--, col++) {
+                if (board[row][col] == playerPiece) {
+                    upCounter++;
+                }
+            }
+            if (upCounter == SIZE) {
+                return true;
+            }
+            return false;
+        }
+
+        public List<Integer> getRandPos() {
+            List<Integer> rowAndCol = new ArrayList<>();
+            Random rand = new Random();
+            // get random available row by selecting random key from hash map
+            List<Integer> rows = new ArrayList<>(this.availableSpaces.keySet());
+            int randRow = rows.get(rand.nextInt(rows.size()));
+            rowAndCol.add(randRow);
+            // then get random available col by selecting random value from the list corresponding to the random key
+            List<Integer> cols = this.availableSpaces.get(randRow);
+            int randCol = cols.get(rand.nextInt(cols.size()));
+            rowAndCol.add(randCol);
+            return rowAndCol;
+        }
+    }
+
+
+
+    public static void playGame() {
+        Board gameBoard = new Board();
+
+        Player player1 = new Player(1);
+        Player player2 = new Player(2);
+
+        int counter = 0;
+        for (int i = 0; i < (SIZE * SIZE); i++) {
+            // Player 1 plays first
+            System.out.println("X");
+            List<Integer> temp = gameBoard.getRandPos();
+            int row = temp.get(0), col = temp.get(1);
+            player1.makeMove(gameBoard, row, col);
+            if (player1.checkWin(gameBoard)) {
+                System.out.println("---------");
+                gameBoard.printBoard();
+                System.out.println("Player 1 wins (X)");
+                System.exit(0);
+            }
+            System.out.println();
+            gameBoard.printBoard();
+            System.out.println();
+            counter++;
+
+            // if the game board size is odd, there are an odd number of moves
+            // player 1 will get an extra move, meaning if we get to the final move and no one has won, its a tie
+            if (SIZE % 2 != 0 & counter == (SIZE * SIZE)) {
+                System.out.println("TIE");
+                gameBoard.printBoard();
+                System.exit(0);
+            }
+
+            // Player 2 follows
+            System.out.println("O");
+            temp = gameBoard.getRandPos();
+            row = temp.get(0); col = temp.get(1);
+            player2.makeMove(gameBoard, row, col);
+            if (player2.checkWin(gameBoard)) {
+                System.out.println("---------");
+                gameBoard.printBoard();
+                System.out.println("Player 2 wins (O)");
+                System.exit(0);
+            }
+            System.out.println();
+            gameBoard.printBoard();
+            System.out.println();
+            counter++;
+        }
+    }
+    
+    public static void main(String[] args) {
+        playGame();
+    }
+}
